@@ -125,6 +125,9 @@ int main(int argc, char *argv[]) {
     // od -A n -t x1 module.bin
     // or to get disassembly
     // objdump -M intel -D -b binary -m i386:x86-64 module.bin
+    // Create ELF:
+    // objcopy --input-target=binary --output-target=elf32-little module.bin  module.bin.elf
+    // objdump -M intel -m i386:x86-64 -D module.bin.elf
     auto print = [&out](byte const *origin, size_t size) {
       // byte const *ptr = origin;
       // byte const *end = origin + size;
