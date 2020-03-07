@@ -12,6 +12,23 @@
 #include <stdlib.h>
 #include <string.h>
 
+namespace v8 {
+namespace base {
+#define DEFINE_MAKE_CHECK_OP_STRING(type)                                      \
+  template std::string *MakeCheckOpString<type, type>(type, type,              \
+                                                      char const *);           \
+  template std::string PrintCheckOperand<type>(type);
+DEFINE_MAKE_CHECK_OP_STRING(int)
+DEFINE_MAKE_CHECK_OP_STRING(long)      // NOLINT(runtime/int)
+DEFINE_MAKE_CHECK_OP_STRING(long long) // NOLINT(runtime/int)
+DEFINE_MAKE_CHECK_OP_STRING(unsigned int)
+DEFINE_MAKE_CHECK_OP_STRING(unsigned long)      // NOLINT(runtime/int)
+DEFINE_MAKE_CHECK_OP_STRING(unsigned long long) // NOLINT(runtime/int)
+DEFINE_MAKE_CHECK_OP_STRING(void const *)
+#undef DEFINE_MAKE_CHECK_OP_STRING
+} // namespace base
+} // namespace v8
+
 std::vector<v8::internal::byte> readFile(const char *filename) {
   std::ifstream file(filename, std::ios::binary);
   file.unsetf(std::ios::skipws);
@@ -30,11 +47,19 @@ int main(int argc, char *argv[]) {
   using namespace v8::internal::wasm;
   using namespace v8::internal;
   i::FLAG_experimental_wasm_simd = true;
-  i::FLAG_perf_prof_annotate_wasm = true;
-  i::FLAG_code_comments = true;
+  // i::FLAG_perf_prof_annotate_wasm = true;
+  // i::FLAG_code_comments = true;
   i::FLAG_opt = true;
   i::FLAG_wasm_opt = true;
   i::FLAG_wasm_stack_checks = false;
+  i::FLAG_liftoff = false;
+  i::FLAG_debug_code = false;
+  i::FLAG_always_opt = true;
+  i::FLAG_enable_sse3 = true;
+  i::FLAG_enable_ssse3 = true;
+  i::FLAG_enable_sse4_1 = true;
+  i::FLAG_enable_sse4_2 = true;
+  i::FLAG_wasm_bounds_checks = false;
   v8::V8::InitializeICUDefaultLocation(argv[0]);
   v8::V8::InitializeExternalStartupData(argv[0]);
   std::unique_ptr<v8::Platform> platform(v8::platform::NewDefaultPlatform());
@@ -93,14 +118,13 @@ int main(int argc, char *argv[]) {
     WasmCodeRefScope code_ref_scope;
     WasmCode *code = native_module->AddCompiledCode(std::move(result));
     DCHECK_NOT_NULL(code);
-    // code->Print();
   }
   {
     std::ofstream out("module.bin", std::ios::out | std::ofstream::binary);
     // execute to get hex dump
     // od -A n -t x1 module.bin
     // or to get disassembly
-    // objdump -M intel -D -b binary -mi386 -Maddr16,data16 module.bin 
+    // objdump -M intel -D -b binary -m i386:x86-64 module.bin
     auto print = [&out](byte const *origin, size_t size) {
       // byte const *ptr = origin;
       // byte const *end = origin + size;
@@ -118,6 +142,7 @@ int main(int argc, char *argv[]) {
     for (WasmCode *wasm_code : wasm_codes) {
       if (wasm_code->kind() != WasmCode::Kind::kFunction)
         continue;
+      wasm_code->Print();
       auto const &instructions = wasm_code->instructions();
       int instruction_size = wasm_code->unpadded_binary_size();
       if (wasm_code->constant_pool_offset() < instruction_size) {
