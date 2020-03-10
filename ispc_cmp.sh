@@ -18,7 +18,7 @@ cd $DUMP_PATH && \
 NAME=tmp && \
 ispc $ISPC_FILE -O3 --opt=fast-masked-vload --opt=fast-math --opt=force-aligned-memory --target=wasm-i32x4 --nostdlib --emit-llvm-text -o $NAME.ll && \
 llc -O3 -filetype=obj $NAME.ll -o $NAME.o && \
-wasm-ld --lto-O3 --initial-memory=16777216 --max-memory=16777216 --no-entry --export=bench_main --allow-undefined -o $NAME.wasm $NAME.o && \
+wasm-ld --lto-O3 --initial-memory=67108864 --max-memory=67108864 --no-entry --export=bench_main --allow-undefined -o $NAME.wasm $NAME.o && \
 wasm-dis $NAME.wasm -o $NAME.wat && \
 sh $SCRIPTPATH/wat_perf.sh $NAME.wat && \
 sh $SCRIPTPATH/ispc_perf.sh $ISPC_FILE

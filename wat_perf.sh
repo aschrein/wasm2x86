@@ -17,9 +17,12 @@ rm -rf $DUMP_PATH
 mkdir $DUMP_PATH
 cd $DUMP_PATH && \
 sh $SCRIPTPATH/wat2x86.sh $WAT_FILE && \
-perf record -o perf.data -k mono $D8_PATH --perf-prof \
+$D8_PATH --perf-prof \
         --experimental-wasm-simd --no-liftoff --no-debug-code --no-wasm-stack-checks \
-        --turbo-stats-wasm --wasm-opt --perf-prof-annotate-wasm $SCRIPTPATH/bench_driver.js -- tmp.wasm && \
-perf inject -j -i perf.data -o perf.data.jitted && \
+        --wasm-opt --perf-prof-annotate-wasm $SCRIPTPATH/bench_driver.js -- tmp.wasm
+# perf record -o perf.data -k mono $D8_PATH --perf-prof \
+#         --experimental-wasm-simd --no-liftoff --no-debug-code --no-wasm-stack-checks \
+#         --turbo-stats-wasm --wasm-opt --perf-prof-annotate-wasm $SCRIPTPATH/bench_driver.js -- tmp.wasm && \
+# perf inject -j -i perf.data -o perf.data.jitted && \
 # perf report -M intel -i perf.data.jitted
 exit
