@@ -13,7 +13,7 @@ long long current_timestamp() {
 extern void bench_main(float *a, int N);
 
 int main(int argc, char **argv) {
-  int N = 4 * (1 << 20);
+  int N = 16 * (1 << 20);
   void *_a = (void*)malloc(3 * N * sizeof(float) + 16);
   // Align to 16 bytes
   float *a = (float*)(void*)(

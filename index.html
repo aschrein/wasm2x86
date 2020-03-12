@@ -1,0 +1,162 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+
+<body>
+    <script type='text/javascript'>
+        // https://stackoverflow.com/questions/17242144/javascript-convert-hsb-hsv-color-to-rgb-accurately
+        function HSVtoRGB(h, s, v) {
+            var r, g, b, i, f, p, q, t;
+            if (arguments.length === 1) {
+                s = h.s, v = h.v, h = h.h;
+            }
+            i = Math.floor(h * 6);
+            f = h * 6 - i;
+            p = v * (1 - s);
+            q = v * (1 - f * s);
+            t = v * (1 - (1 - f) * s);
+            switch (i % 6) {
+                case 0: r = v, g = t, b = p; break;
+                case 1: r = q, g = v, b = p; break;
+                case 2: r = p, g = v, b = t; break;
+                case 3: r = p, g = q, b = v; break;
+                case 4: r = t, g = p, b = v; break;
+                case 5: r = v, g = p, b = q; break;
+            }
+            return {
+                r: Math.round(r * 255),
+                g: Math.round(g * 255),
+                b: Math.round(b * 255)
+            };
+        }
+        function exec_mandelbrot(url, type) {
+            var memory = new WebAssembly.Memory({ initial: 2560 });
+            var timing_table = {};
+            var last_bb = "BEGIN";
+            var last_time = 0;
+            // var id_map = {};
+            function bb_begin(offset, length) {
+                cur_time = performance.now();
+
+                let entry = last_bb + "->" + offset;
+                let dt = (cur_time - last_time);
+                // id_map[offset] = length;
+                if (entry in timing_table) {
+                    timing_table[entry] += dt;
+                } else {
+                    timing_table[entry] = dt;
+                }
+                last_bb = "" + offset;
+                last_time = performance.now();
+            }
+            var importObject = {
+                env: {
+                    println: println, memory: memory,
+                    __wasm_bb_begin: bb_begin,
+                    __wasm_bb_end: bb_begin,
+
+                    get_num: () => 1
+                }
+            };
+            function println(offset, length) {
+                var bytes = new Uint8Array(memory.buffer, offset, length);
+                var string = new TextDecoder('utf8').decode(bytes);
+                console.log(string);
+            }
+            fetch(url).then(response =>
+                response.arrayBuffer()
+            ).then(bytes =>
+                WebAssembly.instantiate(bytes, importObject)
+            ).then(results => {
+
+                let instance = results.instance;
+                let view = new Int32Array(memory.buffer);
+                // let view = new Float32Array(memory.buffer);
+                // Object.assign(view, [1, 1, 1, 1, 6, 7, 7, 7]);
+                // instance.exports.add_arrays(48, 0, 16, 4);
+                // console.log(view);
+                let width = 1024;
+                let height = 1024;
+                let max_iter = 255;
+                let out_offset = ((1 << 16) * 10);
+                console.log(type + " started");
+                last_time = performance.now();
+                var t0 = performance.now();
+                instance.exports.mandelbrot(-1.5, -1.0, 0.5, 1.0, width, height, max_iter, out_offset);
+                var t1 = performance.now();
+                {
+                    cur_time = performance.now();
+                    let entry = last_bb + "->END";
+                    let dt = (cur_time - last_time);
+                    timing_table[entry] = dt;
+                }
+                console.log(type + " finished. ms: " + (t1 - t0));
+                let canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                var ctx = canvas.getContext('2d');
+                const imageData = ctx.createImageData(width, height);
+                for (let i = 0; i < imageData.data.length; i += 4) {
+                    let v = 1.0 - (0.0 + view[(out_offset + i) / 4]) / max_iter;
+                    let rgb = HSVtoRGB(1.0 - v, v, v);
+                    imageData.data[i + 0] = rgb.r;  // R value
+                    imageData.data[i + 1] = rgb.g;    // G value
+                    imageData.data[i + 2] = rgb.b;  // B value
+                    imageData.data[i + 3] = 255;  // A value
+                }
+                ctx.putImageData(imageData, 0, 0);
+                document.body.appendChild(canvas);
+                let entries = [];
+                Object.keys(timing_table).forEach(key => {
+                    entries.push([key, timing_table[key]]);
+                });
+                entries.sort(function (a, b) {
+                    return a[1] - b[1];
+                });
+                console.log(entries);
+                // entries = JSON.parse(JSON.stringify(entries));
+                // Object.keys(id_map).forEach(k => {
+                //     let offset = k;
+                //     let length = id_map[k];
+                //     let bytes = new Uint8Array(memory.buffer, offset, length);
+                //     let bbname = new TextDecoder('utf8').decode(bytes);
+                //     for (let i in entries) {
+                //         let tmp = 
+                //         entries[i][0] = entries[i][0].replace("" + k, bbname);
+                //     }
+                //     // console.log(k + "->" + bbname);
+                // });
+                // console.log(entries);
+                // export void mandelbrot_ispc(uniform float x0, uniform float y0,
+                //                 uniform float x1, uniform float y1,
+                //                 uniform int width, uniform int height,
+                //                 uniform int maxIterations,
+                //                 uniform int output[])
+                // console.log(view);
+            });
+        }
+        exec_mandelbrot('tmp/mandelbrot_serial.wasm', "serial");
+        exec_mandelbrot('tmp/mandelbrot_ispc.wasm', "ispc");
+        //   var Module = {};
+        //   fetch('test.wasm')
+        //     .then(response =>
+        //       response.arrayBuffer()
+        //     ).then(buffer => {
+        //       Module.canvas = document.getElementById("canvas");
+        //       Module.print = (s)  => { console.log(s); }
+        //       Module.printErr = (s)  => { console.error(s); }
+        //       Module.wasmBinary = buffer;
+        //       var script = document.createElement('script');
+        //       script.src = "index.js";
+        //       script.onload = function() {
+        //         console.log("Emscripten module loaded")
+        //       }
+        //       document.body.appendChild(script);
+        //     });
+    </script>
+</body>
+
+</html>

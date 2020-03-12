@@ -46,20 +46,6 @@ std::vector<v8::internal::byte> readFile(const char *filename) {
 int main(int argc, char *argv[]) {
   using namespace v8::internal::wasm;
   using namespace v8::internal;
-  i::FLAG_experimental_wasm_simd = true;
-  // i::FLAG_perf_prof_annotate_wasm = true;
-  // i::FLAG_code_comments = true;
-  i::FLAG_opt = true;
-  i::FLAG_wasm_opt = true;
-  i::FLAG_wasm_stack_checks = false;
-  i::FLAG_liftoff = false;
-  i::FLAG_debug_code = false;
-  i::FLAG_always_opt = true;
-  i::FLAG_enable_sse3 = true;
-  i::FLAG_enable_ssse3 = true;
-  i::FLAG_enable_sse4_1 = true;
-  i::FLAG_enable_sse4_2 = true;
-  i::FLAG_wasm_bounds_checks = false;
   v8::V8::InitializeICUDefaultLocation(argv[0]);
   v8::V8::InitializeExternalStartupData(argv[0]);
   std::unique_ptr<v8::Platform> platform(v8::platform::NewDefaultPlatform());
@@ -79,6 +65,30 @@ int main(int argc, char *argv[]) {
   v8::Context::Scope context_scope(ctx);
 
   v8::Isolate::Scope isolate_scope(isolate);
+
+  i::FLAG_experimental_wasm_simd = true;
+  i::FLAG_opt = true;
+  i::FLAG_wasm_opt = true;
+  i::FLAG_enable_fma3 = true;
+  i::FLAG_enable_lzcnt = true;
+  i::FLAG_enable_popcnt = true;
+  i::FLAG_asm_wasm_lazy_compilation = false;
+  i::FLAG_wasm_lazy_compilation = false;
+  i::FLAG_wasm_async_compilation = false;
+  i::FLAG_wasm_stack_checks = false;
+  i::FLAG_liftoff = false;
+  i::FLAG_debug_code = false;
+  i::FLAG_always_opt = true;
+  i::FLAG_enable_sse3 = true;
+  i::FLAG_enable_ssse3 = true;
+  i::FLAG_enable_sse4_1 = true;
+  i::FLAG_enable_sse4_2 = true;
+  i::FLAG_wasm_bounds_checks = false;
+
+  // i::FLAG_trace_turbo = true;
+  // i::FLAG_trace_wasm_compiler = true;
+  // i::FLAG_perf_prof_annotate_wasm = true;
+  // i::FLAG_code_comments = true;
 
   std::vector<byte> raw_bytes = readFile(argv[1]);
   auto bytes = ModuleWireBytes(&raw_bytes[0], &raw_bytes[0] + raw_bytes.size());
