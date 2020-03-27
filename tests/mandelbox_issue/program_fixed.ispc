@@ -130,46 +130,6 @@ static SPIRV_INLINE varying float3 shadeBg(varying float3& nml, varying float2& 
     return pow(max(float3(0.0f), bgCol), float3(1.89999997615814208984375f));
 }
 
-// static SPIRV_INLINE varying float3 step_inner(float3 &ro, float3 &rd, float &t)
-// {
-//     varying float3 param_3 = ro;
-//     varying float param_4 = t;
-//     varying float3 nml = normal(param_3, param_4);
-//     rd = normalize(reflect(rd, nml));
-//     ro = ro + (rd * 0.004999999888241291046142578125f);
-// }
-
-static SPIRV_INLINE void step(float3 &ro, float3 &rd, float3 &transmit, float &bounce) {
-    for (varying int i = 0; i < 70; i++)
-            {
-                bounce = 0.0f;
-                varying float3 param_2 = ro;
-                varying float t = scene(param_2);
-                if (t < 0.00124999997206032276153564453125f)
-                {
-                    varying float3 param_3 = ro;
-                    varying float param_4 = t;
-                    varying float3 nml = normal(param_3, param_4);
-                    rd = normalize(reflect(rd, nml));
-                    ro = ro + (rd * 0.004999999888241291046142578125f);
-                    transmit = transmit * (float3(0.52499997615814208984375f, 0.560000002384185791015625f, 0.62999999523162841796875f) - float3(float_cast(i) / 70.0f));
-                    bounce = 1.0f;
-                    break;
-                }
-                else
-                {
-                    if (t > 17.0f)
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        ro = ro + (rd * t);
-                    }
-                }
-            }
-}
-
 static SPIRV_INLINE void mainImage(varying float4& fragColor, varying float2& fragCoord, uniform struct inputs& v_167)
 {
     fragColor = float4(0.0f);
@@ -198,7 +158,34 @@ static SPIRV_INLINE void mainImage(varying float4& fragColor, varying float2& fr
             ro = ro + (rd * 4.0f);
             varying float3 transmit = float3(1.0f);
             varying float bounce;
-            step(ro, rd, transmit, bounce);
+            for (varying int i = 0; i < 70; i++)
+            {
+                bounce = 0.0f;
+                varying float3 param_2 = ro;
+                varying float t = scene(param_2);
+                if (t < 0.00124999997206032276153564453125f)
+                {
+                    varying float3 param_3 = ro;
+                    varying float param_4 = t;
+                    varying float3 nml = normal(param_3, param_4);
+                    rd = normalize(reflect(rd, nml));
+                    ro = ro + (rd * 0.004999999888241291046142578125f);
+                    transmit = transmit * (float3(0.52499997615814208984375f, 0.560000002384185791015625f, 0.62999999523162841796875f) - float3(float_cast(i) / 70.0f));
+                    bounce = 1.0f;
+                    break;
+                }
+                else
+                {
+                    if (t > 17.0f)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        ro = ro + (rd * t);
+                    }
+                }
+            }
             transmit = transmit * bounce;
             varying float3 param_5 = float3(0.0f) - rd;
             varying float2 param_6 = fragCoord;
@@ -209,9 +196,7 @@ static SPIRV_INLINE void mainImage(varying float4& fragColor, varying float2& fr
     fragColor = fragColor / float4(4.0f);
 }
 
-static SPIRV_INLINE void program_ispc_main(uniform int3 gl_NumWorkGroups, uniform int3 gl_WorkGroupID,
-varying int3 gl_LocalInvocationID, varying int3 gl_GlobalInvocationID, varying int gl_LocalInvocationIndex,
-uniform struct inputs v_167_ptr[], uniform int _682[])
+static SPIRV_INLINE void program_ispc_main(uniform int3 gl_NumWorkGroups, uniform int3 gl_WorkGroupID, varying int3 gl_LocalInvocationID, varying int3 gl_GlobalInvocationID, varying int gl_LocalInvocationIndex, uniform struct inputs v_167_ptr[], uniform int *_682)
 {
     uniform struct inputs v_167 = v_167_ptr[0];
     uniform float _623 = v_167.iResolution.x;
@@ -237,7 +222,6 @@ uniform struct inputs v_167_ptr[], uniform int _682[])
     varying int _686 = rgb.z;
     varying int _691 = rgb.y;
     varying int _696 = rgb.x;
-    // print("%, ", param.x);
     _682[pxoff] = ((4278190080u | (_686 << (int)(16))) | (_691 << (int)(8))) | _696;
 }
 
