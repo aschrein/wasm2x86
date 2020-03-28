@@ -31,7 +31,10 @@ static void writeImage(int *idImage, int width, int height, const char *filename
     printf("Wrote image file %s\n", filename);
 }
 
-int main(int argc, char *argv[]) {
+extern "C" void run(int *outputData) {
+    bufferSize = 512 * 512 * 4;
+    if (outputData == NULL)
+        outputData = (int *)malloc(bufferSize);
     ispc::inputs inputs;
     float *dims = (float *)((void *)&inputs);
     dims[0] = 512;
@@ -43,9 +46,8 @@ int main(int argc, char *argv[]) {
     dims[6] = 0;
     dims[7] = 0;
 
-    bufferSize = 512 * 512 * 4;
+    
 
-    int *outputData = (int *)malloc(bufferSize);
     int32_t workSize[3];
     workSize[0] = 1;
     workSize[1] = 1;
@@ -56,6 +58,11 @@ int main(int argc, char *argv[]) {
     workGroupID[2] = 0;
     runner_workgroup(workSize, workGroupID, &inputs, outputData);
     writeImage(outputData, 512, 512, "wavm.ppm");
+}
 
+int main(int argc, char *argv[]) {
+    if (argc > 1) {
+        run(NULL);
+    }
     return 0;
 }
